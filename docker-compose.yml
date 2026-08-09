@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ser_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ser_data:/app/data
+      - ser_models:/app/saved_models
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=sqlite+aiosqlite:///./data/app.db
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://127.0.0.1,http://frontend
+    # If running on a machine with a GPU, uncomment the lines below to enable CUDA:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ser_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  ser_data:
+    description: Persistent storage for SQLite database and uploaded audio files
+  ser_models:
+    description: Persistent storage for trained PyTorch model checkpoints

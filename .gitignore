@@ -1,0 +1,121 @@
+# ============================================================
+# Speech Emotion Recognition — .gitignore
+# ============================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+wheels/
+*.whl
+*.pyd
+.Python
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# Environment files
+.env
+.env.local
+.env.production
+speech-recognition/backend/.env
+speech-recognition/frontend/.env
+speech-recognition/frontend/.env.local
+speech-recognition/frontend/.env.production
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Node.js / Frontend
+node_modules/
+speech-recognition/frontend/node_modules/
+speech-recognition/frontend/dist/
+.next/
+out/
+*.local
+
+# ML / Training artefacts (too large for git)
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.pb
+speech-recognition/backend/saved_models/**
+!speech-recognition/backend/saved_models/.gitkeep
+
+# Datasets (too large for git — use DVC or download scripts)
+speech-recognition/backend/data/raw/**
+!speech-recognition/backend/data/raw/.gitkeep
+speech-recognition/backend/data/processed/**
+!speech-recognition/backend/data/processed/metadata.csv
+speech-recognition/backend/dataset/raw/**
+!speech-recognition/backend/dataset/raw/.gitkeep
+speech-recognition/backend/dataset/processed/**
+!speech-recognition/backend/dataset/processed/.gitkeep
+
+# Logs
+logs/
+*.log
+speech-recognition/backend/logs/
+tensorboard_logs/
+runs/
+
+# Coverage / testing cache
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Docker
+.docker/
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Uploaded audio files
+speech-recognition/backend/uploads/**
+!speech-recognition/backend/uploads/.gitkeep
+
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
