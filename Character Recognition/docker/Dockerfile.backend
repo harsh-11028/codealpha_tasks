@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1.4
+FROM python:3.11-slim as builder
+
+# Install core Linux system libraries required for OpenCV and Tesseract
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy dependency specification and install via pip
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchvision torchaudio && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy backend codebase, models, and OCR processing layers
+COPY . .
+
+# Expose FastAPI HTTP server port
+EXPOSE 8000
+
+# Set environment variables for headless compute and production runtime
+ENV PYTHONUNBUFFERED=1
+ENV APP_ENV=production
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Healthcheck to monitor container API liveliness
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Launch production server with uvicorn worker binding
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

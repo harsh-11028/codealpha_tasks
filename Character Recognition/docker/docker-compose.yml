@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    image: antigravity/ocr-backend:latest
+    container_name: ocr_fastapi_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - API_PORT=8000
+      - DATABASE_URL=sqlite:///./data/ocr_system.db
+      - MODELS_DIR=/app/models/saved_models
+    volumes:
+      - db_data:/app/data
+      - model_weights:/app/models/saved_models
+      - uploads_storage:/app/backend/uploads
+    networks:
+      - ocr_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    image: antigravity/ocr-frontend:latest
+    container_name: ocr_react_studio
+    restart: unless-stopped
+    ports:
+      - "5173:80" # Map container Nginx port 80 to host port 5173 / 3000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ocr_network
+
+volumes:
+  db_data:
+    driver: local
+  model_weights:
+    driver: local
+  uploads_storage:
+    driver: local
+
+networks:
+  ocr_network:
+    driver: bridge

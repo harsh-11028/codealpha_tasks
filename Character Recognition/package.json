@@ -1,0 +1,32 @@
+{
+  "name": "ai-handwritten-ocr-system",
+  "version": "1.0.0",
+  "description": "An Enterprise-Grade AI Handwritten Character Recognition & OCR Studio with one-command orchestration",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/setup.js",
+    "dev": "node scripts/dev.js",
+    "setup": "node scripts/setup.js",
+    "build": "npm run build -w frontend",
+    "test": "node scripts/test.js",
+    "train": "node scripts/train.js"
+  },
+  "keywords": [
+    "ai",
+    "ocr",
+    "pytorch",
+    "fastapi",
+    "react",
+    "vite",
+    "computer-vision",
+    "deep-learning"
+  ],
+  "author": "Google DeepMind Advanced Agentic Coding",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
