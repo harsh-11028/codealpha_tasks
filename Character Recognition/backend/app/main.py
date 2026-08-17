@@ -5,7 +5,7 @@ Registers all routers, middleware, CORS, lifespan events,
 and serves Swagger UI at /docs.
 
 Start with:
-    uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+    uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8002
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = 'http://localhost:8002/api';
 
 export interface BoundingBox {
   x: number;
@@ -105,7 +105,7 @@ export const ocrApi = {
     });
     
     // Once uploaded to webcam endpoint, fetch image as File to run prediction
-    const res = await fetch(`http://localhost:8000${response.data.image_url}`);
+    const res = await fetch(`http://localhost:8002${response.data.image_url}`);
     const blob = await res.blob();
     const file = new File([blob], 'webcam_capture.png', { type: 'image/png' });
     return this.predict(file, task as any);

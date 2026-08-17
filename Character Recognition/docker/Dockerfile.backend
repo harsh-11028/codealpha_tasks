@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # Expose FastAPI HTTP server port
-EXPOSE 8000
+EXPOSE 8002
 
 # Set environment variables for headless compute and production runtime
 ENV PYTHONUNBUFFERED=1
@@ -35,7 +35,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Healthcheck to monitor container API liveliness
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+    CMD curl -f http://localhost:8002/api/health || exit 1
 
 # Launch production server with uvicorn worker binding
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "2"]

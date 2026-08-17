@@ -34,22 +34,22 @@ async function launchDevelopmentStudio() {
   }
 
   // 2. TCP Port Occupancy Verification
-  const isBackendRunning = await isPortOccupied(8000);
-  const isFrontendRunning = await isPortOccupied(5173);
+  const isBackendRunning = await isPortOccupied(8002);
+  const isFrontendRunning = await isPortOccupied(5175);
 
   if (isBackendRunning) {
-    log("PORT CHECK", "⚠️ Port 8000 is already active! Assuming an external FastAPI process is running.", colors.yellow);
+    log("PORT CHECK", "⚠️ Port 8002 is already active! Assuming an external FastAPI process is running.", colors.yellow);
   }
   if (isFrontendRunning) {
-    log("PORT CHECK", "⚠️ Port 5173 is currently occupied by another development server.", colors.yellow);
+    log("PORT CHECK", "⚠️ Port 5175 is currently occupied by another development server.", colors.yellow);
   }
 
   const activeChildProcesses = [];
 
   // 3. Launch FastAPI Hot-Reload Backend (using direct .venv uvicorn executable without shell string parsing)
   if (!isBackendRunning) {
-    log("FASTAPI", "⚡ Spawning FastAPI Hot-Reload Server from ./.venv on port 8000...", colors.blue);
-    const uvicornArgs = ["backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"];
+    log("FASTAPI", "⚡ Spawning FastAPI Hot-Reload Server from ./.venv on port 8002...", colors.blue);
+    const uvicornArgs = ["backend.app.main:app", "--host", "0.0.0.0", "--port", "8002", "--reload"];
     
     const backendChild = spawnService("Backend", venvBins.uvicorn, uvicornArgs, {}, colors.blue);
     activeChildProcesses.push(backendChild);
@@ -58,7 +58,7 @@ async function launchDevelopmentStudio() {
   // 4. Intelligent Health Synchronization (Waits for API & Neural Models to warm up before showing UI)
   log("HEALTH CHECK", "⏳ Awaiting backend API neural model warmup & SQLite schema readiness...", colors.cyan);
   try {
-    const health = await waitForBackendHealth("http://127.0.0.1:8000/api/health", 45000);
+    const health = await waitForBackendHealth("http://127.0.0.1:8002/api/health", 45000);
     log("HEALTH CHECK", `✅ Backend Server Active [Status: ${health.status.toUpperCase()} | Compute Engine: ${health.device || 'AUTO'}]`, colors.green);
   } catch (err) {
     errorLog("HEALTH CHECK", "❌ Backend did not report ready within timeout period. Please check terminal logs above for Python stack traces.");
@@ -66,9 +66,9 @@ async function launchDevelopmentStudio() {
   }
 
   // 5. Launch React Vite Dev Server & Automatically Open Default Web Browser
-  log("VITE STUDIO", "🌐 Launching React TypeScript Studio & opening browser at http://localhost:5173 ...", colors.cyan);
+  log("VITE STUDIO", "🌐 Launching React TypeScript Studio & opening browser at http://localhost:5175 ...", colors.cyan);
   const npmCmd = IS_WIN ? "npm.cmd" : "npm";
-  const viteArgs = ["run", "dev", "--", "--open", "http://localhost:5173"];
+  const viteArgs = ["run", "dev", "--", "--open", "http://localhost:5175"];
 
   const frontendChild = spawnService("React-UI", npmCmd, viteArgs, { cwd: FRONTEND_DIR }, colors.cyan);
   activeChildProcesses.push(frontendChild);
@@ -77,8 +77,8 @@ async function launchDevelopmentStudio() {
 ${colors.green}${colors.bright}====================================================================
 🌟 ENTERPRISE STUDIO LIVE & SYNCHRONIZED IN UNISON!
 ====================================================================${colors.reset}
-👉 Interactive Studio UI:  ${colors.bright}http://localhost:5173${colors.reset}
-👉 OpenAPI Documentation:  ${colors.bright}http://localhost:8000/docs${colors.reset}
+👉 Interactive Studio UI:  ${colors.bright}http://localhost:5175${colors.reset}
+👉 OpenAPI Documentation:  ${colors.bright}http://localhost:8002/docs${colors.reset}
 👉 SQLite DB Repository:   ./ocr_system.db
 
 ${colors.dim}Press Ctrl+C in this terminal to gracefully stop both servers.${colors.reset}

@@ -23,7 +23,7 @@ export function App() {
       setPredictionResult(res);
     } catch (err: any) {
       console.error('OCR Prediction failure:', err);
-      setError('Neural OCR Inference failed: ' + (err?.response?.data?.detail || err.message || 'Please ensure backend server is online at port 8000.'));
+      setError('Neural OCR Inference failed: ' + (err?.response?.data?.detail || err.message || 'Please ensure backend server is online at port 8002.'));
     } finally {
       setLoading(false);
     }

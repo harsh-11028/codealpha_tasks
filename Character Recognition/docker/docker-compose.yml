@@ -9,10 +9,10 @@ services:
     container_name: ocr_fastapi_backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8002:8002"
     environment:
       - APP_ENV=production
-      - API_PORT=8000
+      - API_PORT=8002
       - DATABASE_URL=sqlite:///./data/ocr_system.db
       - MODELS_DIR=/app/models/saved_models
     volumes:
@@ -22,7 +22,7 @@ services:
     networks:
       - ocr_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8002/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,7 +36,7 @@ services:
     container_name: ocr_react_studio
     restart: unless-stopped
     ports:
-      - "5173:80" # Map container Nginx port 80 to host port 5173 / 3000
+      - "5175:80" # Map container Nginx port 80 to host port 5175 / 3000
     depends_on:
       backend:
         condition: service_healthy
