@@ -1,0 +1,80 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Button } from '../../components/ui/Button';
+import { PredictionResult } from '../../components/PredictionResult';
+import type { HeartInput, PredictionResult as IPredictionResult } from '../../types';
+import { predictApi } from '../../services/api';
+import { Info } from 'lucide-react';
+
+export default function HeartPrediction() {
+  const [formData, setFormData] = useState<HeartInput>({
+    age: 50, sex: 1, cp: 0, trestbps: 120, chol: 200, fbs: 0, restecg: 0, thalach: 150, exang: 0, oldpeak: 0, slope: 1, ca: 0, thal: 2
+  });
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<IPredictionResult | null>(null);
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await predictApi.predictHeart(formData);
+      setResult(res);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to get prediction');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (result) {
+    return <PredictionResult result={result} onReset={() => setResult(null)} />;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Heart Disease Prediction</CardTitle>
+          <CardDescription>Enter patient clinical data to predict the presence of heart disease.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Input label="Age" name="age" type="number" min="1" max="120" value={formData.age} onChange={handleChange} required />
+              <Select label="Sex" name="sex" value={formData.sex} onChange={handleChange} options={[ {label: 'Female', value: 0}, {label: 'Male', value: 1} ]} />
+              <Select label="Chest Pain Type (cp)" name="cp" value={formData.cp} onChange={handleChange} options={[ {label: 'Typical Angina', value: 0}, {label: 'Atypical Angina', value: 1}, {label: 'Non-Anginal', value: 2}, {label: 'Asymptomatic', value: 3} ]} />
+              <Input label="Resting Blood Pressure (trestbps)" name="trestbps" type="number" min="60" max="300" value={formData.trestbps} onChange={handleChange} required />
+              <Input label="Serum Cholesterol (chol)" name="chol" type="number" min="100" max="600" value={formData.chol} onChange={handleChange} required />
+              <Select label="Fasting Blood Sugar > 120 (fbs)" name="fbs" value={formData.fbs} onChange={handleChange} options={[ {label: 'No', value: 0}, {label: 'Yes', value: 1} ]} />
+              <Select label="Resting ECG (restecg)" name="restecg" value={formData.restecg} onChange={handleChange} options={[ {label: 'Normal', value: 0}, {label: 'ST-T Wave', value: 1}, {label: 'LV Hypertrophy', value: 2} ]} />
+              <Input label="Max Heart Rate (thalach)" name="thalach" type="number" min="60" max="220" value={formData.thalach} onChange={handleChange} required />
+              <Select label="Exercise Induced Angina (exang)" name="exang" value={formData.exang} onChange={handleChange} options={[ {label: 'No', value: 0}, {label: 'Yes', value: 1} ]} />
+              <Input label="ST Depression (oldpeak)" name="oldpeak" type="number" step="0.1" min="0" max="10" value={formData.oldpeak} onChange={handleChange} required />
+              <Select label="ST Slope (slope)" name="slope" value={formData.slope} onChange={handleChange} options={[ {label: 'Upsloping', value: 0}, {label: 'Flat', value: 1}, {label: 'Downsloping', value: 2} ]} />
+              <Select label="Major Vessels (ca)" name="ca" value={formData.ca} onChange={handleChange} options={[ {label: '0', value: 0}, {label: '1', value: 1}, {label: '2', value: 2}, {label: '3', value: 3} ]} />
+              <Select label="Thal (thal)" name="thal" value={formData.thal} onChange={handleChange} options={[ {label: 'Normal', value: 0}, {label: 'Fixed Defect', value: 1}, {label: 'Reversable Defect', value: 2}, {label: '3', value: 3} ]} />
+            </div>
+
+            {error && <div className="text-red-500 font-medium bg-red-50 p-3 rounded-md">{error}</div>}
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm text-yellow-800 flex items-start">
+              <Info className="h-5 w-5 mr-2 shrink-0 mt-0.5" />
+              <p><strong>Medical Disclaimer:</strong> This result is generated by a machine learning model and is NOT a medical diagnosis. Please consult a qualified healthcare professional.</p>
+            </div>
+
+            <Button type="submit" isLoading={loading} className="w-full">Run Prediction</Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

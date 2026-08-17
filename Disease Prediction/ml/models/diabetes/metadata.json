@@ -1,0 +1,21 @@
+{
+    "disease": "diabetes",
+    "algorithm": "RandomForestClassifier",
+    "features": [
+        "Pregnancies",
+        "Glucose",
+        "BloodPressure",
+        "SkinThickness",
+        "Insulin",
+        "BMI",
+        "DiabetesPedigreeFunction",
+        "Age"
+    ],
+    "accuracy": 0.7532,
+    "precision": 0.6379,
+    "recall": 0.6852,
+    "f1_score": 0.6607,
+    "roc_auc": 0.8231,
+    "trained_at": "2026-08-16T23:08:25.838061",
+    "version": "1.0"
+}

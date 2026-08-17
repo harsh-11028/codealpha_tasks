@@ -1,0 +1,113 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { PredictionResult } from '../../components/PredictionResult';
+import type { PredictionResult as IPredictionResult } from '../../types';
+import { predictApi } from '../../services/api';
+import { Info } from 'lucide-react';
+
+const initialData = {
+  mean_radius: 0, mean_texture: 0, mean_perimeter: 0, mean_area: 0,
+  mean_smoothness: 0, mean_compactness: 0, mean_concavity: 0, mean_concave_points: 0,
+  mean_symmetry: 0, mean_fractal_dimension: 0, radius_error: 0, texture_error: 0,
+  perimeter_error: 0, area_error: 0, smoothness_error: 0, compactness_error: 0,
+  concavity_error: 0, concave_points_error: 0, symmetry_error: 0, fractal_dimension_error: 0,
+  worst_radius: 0, worst_texture: 0, worst_perimeter: 0, worst_area: 0,
+  worst_smoothness: 0, worst_compactness: 0, worst_concavity: 0, worst_concave_points: 0,
+  worst_symmetry: 0, worst_fractal_dimension: 0
+};
+
+const sampleData = {
+  mean_radius: 13.0, mean_texture: 18.0, mean_perimeter: 83.0, mean_area: 525.0,
+  mean_smoothness: 0.1, mean_compactness: 0.09, mean_concavity: 0.05, mean_concave_points: 0.03,
+  mean_symmetry: 0.17, mean_fractal_dimension: 0.06, radius_error: 0.28, texture_error: 1.1,
+  perimeter_error: 1.9, area_error: 22.0, smoothness_error: 0.007, compactness_error: 0.015,
+  concavity_error: 0.02, concave_points_error: 0.009, symmetry_error: 0.025, fractal_dimension_error: 0.003,
+  worst_radius: 15.0, worst_texture: 25.0, worst_perimeter: 97.0, worst_area: 680.0,
+  worst_smoothness: 0.13, worst_compactness: 0.20, worst_concavity: 0.20, worst_concave_points: 0.09,
+  worst_symmetry: 0.27, worst_fractal_dimension: 0.08
+};
+
+export default function BreastCancerPrediction() {
+  const [formData, setFormData] = useState<Record<string, number>>(initialData);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<IPredictionResult | null>(null);
+  const [error, setError] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+  };
+
+  const fillSampleData = () => setFormData(sampleData);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await predictApi.predictBreastCancer(formData);
+      setResult(res);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to get prediction');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (result) {
+    return <PredictionResult result={result} onReset={() => setResult(null)} />;
+  }
+
+  const renderInputs = (keys: string[], prefix: string) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {keys.map(key => (
+        <Input key={key} label={key.replace(prefix, '').replace(/_/g, ' ')} name={key} type="number" step="0.001" value={formData[key]} onChange={handleChange} required />
+      ))}
+    </div>
+  );
+
+  const meanKeys = Object.keys(initialData).filter(k => k.startsWith('mean_'));
+  const errorKeys = Object.keys(initialData).filter(k => k.endsWith('_error'));
+  const worstKeys = Object.keys(initialData).filter(k => k.startsWith('worst_'));
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <Card>
+        <CardHeader className="flex flex-row justify-between items-center">
+          <div>
+            <CardTitle>Breast Cancer Prediction</CardTitle>
+            <CardDescription>Enter features computed from a digitized image of a fine needle aspirate (FNA).</CardDescription>
+          </div>
+          <Button type="button" variant="outline" onClick={fillSampleData}>Fill with Sample Data</Button>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-4 border-b pb-2">Mean Values</h3>
+              {renderInputs(meanKeys, 'mean_')}
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-4 border-b pb-2">Error Values</h3>
+              {renderInputs(errorKeys, '')}
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-4 border-b pb-2">Worst Values</h3>
+              {renderInputs(worstKeys, 'worst_')}
+            </div>
+
+            {error && <div className="text-red-500 font-medium bg-red-50 p-3 rounded-md">{error}</div>}
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm text-yellow-800 flex items-start">
+              <Info className="h-5 w-5 mr-2 shrink-0 mt-0.5" />
+              <p><strong>Medical Disclaimer:</strong> This result is generated by a machine learning model and is NOT a medical diagnosis. Please consult a qualified healthcare professional.</p>
+            </div>
+
+            <Button type="submit" isLoading={loading} className="w-full lg:w-auto px-12">Run Prediction</Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

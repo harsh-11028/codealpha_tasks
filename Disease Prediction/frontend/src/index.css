@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #DC2626;
+  --secondary: #64748B;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
