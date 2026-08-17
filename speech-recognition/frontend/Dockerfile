@@ -31,13 +31,13 @@ RUN echo 'server { \
     } \
     # Proxy /api to backend \
     location /api/ { \
-        proxy_pass http://backend:8000/; \
+        proxy_pass http://backend:8001/; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
     } \
     # Proxy /ws to backend for WebSockets \
     location /ws/ { \
-        proxy_pass http://backend:8000/ws/; \
+        proxy_pass http://backend:8001/ws/; \
         proxy_http_version 1.1; \
         proxy_set_header Upgrade $http_upgrade; \
         proxy_set_header Connection "upgrade"; \

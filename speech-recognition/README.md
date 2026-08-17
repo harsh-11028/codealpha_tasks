@@ -205,9 +205,9 @@ docker compose up --build
 ```
 
 Access:
-- **Frontend**: http://localhost:5173 (Native) or http://localhost (Docker)
-- **Backend API**: http://localhost:8000
-- **API Docs (Swagger)**: http://localhost:8000/docs
+- **Frontend**: http://localhost:5174 (Native) or http://localhost (Docker)
+- **Backend API**: http://localhost:8001
+- **API Docs (Swagger)**: http://localhost:8001/docs
 
 ---
 
@@ -220,7 +220,7 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-uvicorn api.main:app --reload --port 8000
+uvicorn api.main:app --reload --port 8001
 ```
 
 #### Frontend
@@ -273,7 +273,7 @@ python training/evaluate.py --model-path saved_models/best_model.pt
 
 ## 🌐 API Documentation
 
-Full Swagger UI available at: `http://localhost:8000/docs`
+Full Swagger UI available at: `http://localhost:8001/docs`
 
 ### Key Endpoints
 

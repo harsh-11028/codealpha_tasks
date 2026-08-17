@@ -302,7 +302,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "api.main:app",
         host=os.getenv("BACKEND_HOST", "0.0.0.0"),
-        port=int(os.getenv("BACKEND_PORT", "8000")),
+        port=int(os.getenv("BACKEND_PORT", "8001")),
         reload=os.getenv("BACKEND_RELOAD", "true").lower() == "true",
         log_level="info",
         access_log=True,

@@ -20,7 +20,7 @@ def add_cors_middleware(app: FastAPI) -> None:
     """
     raw_origins = os.getenv(
         "ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:3000,http://localhost:80",
+        "http://localhost:5174,http://localhost:3000,http://localhost:80",
     )
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 

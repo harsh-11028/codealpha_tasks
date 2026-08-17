@@ -25,13 +25,13 @@ COPY . .
 ENV APP_ENV=production
 ENV PYTHONPATH=/app
 ENV BACKEND_HOST=0.0.0.0
-ENV BACKEND_PORT=8000
+ENV BACKEND_PORT=8001
 
 # Create volume mount points for databases and models
 RUN mkdir -p /app/data /app/saved_models
 
 # Expose FastAPI port
-EXPOSE 8000
+EXPOSE 8001
 
 # Run the FastAPI server using Uvicorn
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8001"]

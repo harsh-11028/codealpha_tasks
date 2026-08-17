@@ -8,7 +8,7 @@ services:
     container_name: ser_backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8001"
     volumes:
       - ser_data:/app/data
       - ser_models:/app/saved_models

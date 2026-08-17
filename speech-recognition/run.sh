@@ -26,18 +26,18 @@ if [ -d "venv" ]; then
     source venv/bin/activate
 fi
 
-uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload &
+uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload &
 BACKEND_PID=$!
 
 # Start Frontend
 echo "➔ Starting Vite Frontend..."
 cd ../frontend
-npm run dev -- --port 5173 --host 127.0.0.1 &
+npm run dev -- --port 5174 --host 127.0.0.1 &
 FRONTEND_PID=$!
 
 echo "✅ System is running!"
-echo "   Backend API: http://127.0.0.1:8000"
-echo "   Frontend UI: http://127.0.0.1:5173"
+echo "   Backend API: http://127.0.0.1:8001"
+echo "   Frontend UI: http://127.0.0.1:5174"
 echo "   Press Ctrl+C to stop both servers."
 
 wait
