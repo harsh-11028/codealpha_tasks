@@ -47,11 +47,12 @@ async def lifespan(app: FastAPI):
     create_tables()
     logger.info("✅ Database tables created/verified.")
 
-    # Warm up OCR pipeline in background
+    # Warm up OCR pipeline in background thread to avoid blocking ASGI event loop
     try:
+        import asyncio
         from backend.app.services.ocr_service import get_pipeline
-        get_pipeline()
-        logger.info("✅ OCR pipeline initialized.")
+        asyncio.create_task(asyncio.to_thread(get_pipeline))
+        logger.info("✅ OCR pipeline initialization started in background thread.")
     except Exception as exc:
         logger.warning("⚠️  OCR pipeline init deferred: %s", exc)
 

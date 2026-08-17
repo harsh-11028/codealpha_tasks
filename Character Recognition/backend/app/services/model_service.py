@@ -17,15 +17,19 @@ class ModelService:
     """Provides model information and management for the API."""
 
     def get_loaded_models(self) -> List[str]:
-        pipeline = get_pipeline()
-        if pipeline._predictor and pipeline._predictor.selector:
-            return pipeline._predictor.selector.get_loaded_models()
+        from models.ocr.pipeline import _default_pipeline
+        if _default_pipeline is None or not _default_pipeline._initialized:
+            return []
+        if _default_pipeline._predictor and _default_pipeline._predictor.selector:
+            return _default_pipeline._predictor.selector.get_loaded_models()
         return []
 
     def get_model_info(self) -> List[Dict]:
-        pipeline = get_pipeline()
-        if pipeline._predictor:
-            return pipeline._predictor.get_model_info()
+        from models.ocr.pipeline import _default_pipeline
+        if _default_pipeline is None or not _default_pipeline._initialized:
+            return []
+        if _default_pipeline._predictor:
+            return _default_pipeline._predictor.get_model_info()
         return []
 
     def get_active_model(self) -> str:
@@ -33,4 +37,5 @@ class ModelService:
         return loaded[0] if loaded else "none"
 
     def is_ready(self) -> bool:
-        return get_pipeline()._initialized
+        from models.ocr.pipeline import _default_pipeline
+        return _default_pipeline is not None and _default_pipeline._initialized
