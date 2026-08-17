@@ -28,9 +28,9 @@ class Settings(BaseSettings):
 
     # Server
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 8002
     api_reload: bool = True
-    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
+    allowed_origins: str = "http://localhost:5175,http://127.0.0.1:5175"
 
     # Database
     database_url: str = "sqlite:///./ocr_system.db"
