@@ -148,29 +148,72 @@ def _assess_image_quality(image: np.ndarray) -> Dict[str, float]:
     }
 
 
+# Path where TrOCR fine-tuned checkpoint is stored
+_TROCR_CHECKPOINT_DIR = str(
+    Path(__file__).resolve().parent.parent / "saved_models" / "best_trocr"
+)
+
+
+def _is_handwriting(quality: Dict[str, float]) -> bool:
+    """
+    Heuristically decide if an image looks like handwriting vs printed/typed text.
+
+    Handwriting characteristics:
+    - Moderate-to-high sharpness (pen strokes are sharp)
+    - Moderate text density
+    - High contrast (dark ink on white paper)
+
+    Printed text characteristics:
+    - Very uniform stroke widths (detected via contrast uniformity)
+    - Lower noise level
+
+    We use a simple conservative rule: route to TrOCR when the image
+    has high contrast (likely ink on paper) AND moderate text density
+    (not a UI screenshot with very sparse text).
+    """
+    contrast     = quality.get("contrast", 0)
+    text_density = quality.get("text_density", 0)
+    sharpness    = quality.get("sharpness", 0)
+
+    # Handwriting on paper: high contrast (dark ink on white), moderate-to-high
+    # text density (0.02–0.85), good sharpness.
+    # Exclude near-pure-white or near-pure-black images (text_density < 0.01 or > 0.90).
+    if contrast > 40 and 0.02 < text_density < 0.90 and sharpness > 50:
+        return True
+    return False
+
+
 def _select_engine(quality: Dict[str, float], task: str) -> str:
     """
     Select OCR engine based on image quality and task type.
+
+    Routing logic:
+    - character task   → custom (CNN character classifier)
+    - handwritten doc  → trocr  (TrOCR pretrained on handwriting)
+    - printed/UI text  → easyocr
+    - difficult/mixed  → hybrid (easyocr fallback)
 
     Args:
         quality: Quality metrics from _assess_image_quality.
         task:    'character' | 'word' | 'sentence'
 
     Returns:
-        Engine name: 'custom' | 'easyocr' | 'tesseract' | 'hybrid'
+        Engine name: 'custom' | 'trocr' | 'easyocr' | 'tesseract' | 'hybrid'
     """
     if task == "character":
         return "custom"  # Always use custom model for isolated chars
 
-    # For word/sentence: route based on image characteristics and handwriting specialization
-    if quality["sharpness"] > 500 and quality["text_density"] < 0.15:
-        # Clean, sparse handwritten document — EasyOCR performs best with Latin handwriting models
-        return "easyocr"
-    elif quality["contrast"] > 60:
-        # Good contrast — EasyOCR for natural scene and handwritten text
+    # Check if TrOCR checkpoint is available
+    trocr_available = (Path(_TROCR_CHECKPOINT_DIR) / "config.json").exists()
+
+    if trocr_available and _is_handwriting(quality):
+        # Handwritten document — use TrOCR (trained specifically for handwriting)
+        return "trocr"
+    elif quality["contrast"] > 40:
+        # Printed / scene text with good contrast — use EasyOCR
         return "easyocr"
     else:
-        # Difficult handwriting — use hybrid
+        # Difficult image — use hybrid for best-effort
         return "hybrid"
 
 
@@ -199,6 +242,7 @@ class OCRPipeline:
         self._predictor = None
         self._easyocr = None
         self._tesseract = None
+        self._trocr = None          # TrOCR handwriting engine
         self._reconstructor = TextReconstructor(
             word_gap_multiplier=2.5,
             apply_cleanup=True,
@@ -225,12 +269,33 @@ class OCRPipeline:
         if self.cfg.inference.tesseract_enabled:
             self._tesseract = TesseractEngine()
 
+        # TrOCR — handwriting-specific engine (lazy: only load weights if checkpoint exists)
+        trocr_ckpt = Path(_TROCR_CHECKPOINT_DIR)
+        try:
+            from models.handwriting.trocr_engine import TrOCREngine
+            self._trocr = TrOCREngine(
+                checkpoint_dir=str(trocr_ckpt) if (trocr_ckpt / "config.json").exists() else None
+            )
+            if (trocr_ckpt / "config.json").exists():
+                logger.info("TrOCR: fine-tuned checkpoint found at %s", trocr_ckpt)
+            else:
+                logger.info("TrOCR: using pretrained microsoft/trocr-base-handwritten (no fine-tuned ckpt yet)")
+        except ImportError:
+            logger.warning(
+                "transformers not installed — TrOCR engine unavailable. "
+                "Install with: pip install transformers sentencepiece"
+            )
+            self._trocr = None
+
         self._initialized = True
         logger.info("OCR pipeline ready.")
 
     def _ensure_initialized(self) -> None:
         if not self._initialized:
-            self.initialize()
+            from models.ocr.pipeline import _pipeline_lock
+            with _pipeline_lock:
+                if not self._initialized:
+                    self.initialize()
 
     # ------------------------------------------------------------------
     # Preprocessing
@@ -475,11 +540,78 @@ class OCRPipeline:
                 logger.warning("Tesseract sentence extraction failed (%s); trying fallback engines.", exc)
 
         has_custom_models = bool(self._predictor and getattr(self._predictor, "loaded_models", []))
-        if not success and self._easyocr and (selected_engine in ("easyocr", "hybrid", "tesseract", "auto") or (selected_engine == "custom" and not has_custom_models)):
+
+        # ── TrOCR: line-by-line handwriting recognition ─────────────────────
+        if not success and self._trocr and selected_engine == "trocr":
             try:
-                text, confidence = self._easyocr.extract_text(color, join_char="\n")
-                engine_used = "easyocr" if selected_engine == "easyocr" else f"easyocr ({selected_engine} routing)"
-                success = True
+                from models.segmentation.line_detector import LineDetector as _LD
+                _line_det = _LD(min_line_height=self.cfg.inference.min_char_area)
+                detected_lines = _line_det.detect(binary)
+
+                trocr_texts   = []
+                trocr_confs   = []
+                trocr_boxes   = []
+
+                for line_obj in detected_lines:
+                    # Crop the color line strip
+                    y1 = max(0, int(line_obj.y_min))
+                    y2 = min(color.shape[0], int(line_obj.y_max))
+                    x1 = max(0, int(line_obj.x_min))
+                    x2 = min(color.shape[1], int(line_obj.x_max))
+                    line_crop = color[y1:y2, x1:x2]
+                    if line_crop.size == 0:
+                        continue
+
+                    line_text, line_conf = self._trocr.recognize(line_crop)
+                    if line_text.strip():
+                        trocr_texts.append(line_text.strip())
+                        trocr_confs.append(line_conf)
+                        trocr_boxes.append({
+                            "x": x1, "y": y1,
+                            "w": x2 - x1, "h": y2 - y1,
+                            "text": line_text.strip(),
+                            "confidence": line_conf,
+                        })
+
+                if trocr_texts:
+                    text        = "\n".join(trocr_texts)
+                    confidence  = sum(trocr_confs) / len(trocr_confs)
+                    word_boxes_list = trocr_boxes
+                    line_boxes      = trocr_boxes   # use line boxes as primary
+                    char_boxes_list = []
+                    engine_used     = "trocr"
+                    success         = True
+                    logger.info(
+                        "TrOCR recognized %d lines | conf=%.2f",
+                        len(trocr_texts), confidence,
+                    )
+            except Exception as exc:
+                logger.warning("TrOCR extraction failed (%s); falling back to EasyOCR.", exc)
+
+        # ── EasyOCR fallback (printed text / trocr failure) ──────────────────
+        if not success and self._easyocr and (selected_engine in ("easyocr", "hybrid", "tesseract", "auto") or (selected_engine == "custom" and not has_custom_models) or (selected_engine == "trocr" and not success)):
+            try:
+                results = self._easyocr.read_image(color)
+                if results:
+                    text = "\n".join(r.text for r in results)
+                    confidence = sum(r.confidence for r in results) / len(results)
+                    # Replace fallback segmentor boxes with actual EasyOCR detections
+                    word_boxes_list = [
+                        {
+                            "x": r.x_min, "y": r.y_min,
+                            "w": r.x_max - r.x_min, "h": r.y_max - r.y_min,
+                            "text": r.text,
+                            "confidence": r.confidence,
+                        }
+                        for r in results
+                    ]
+                    line_boxes = []
+                    char_boxes_list = []
+                    engine_used = "easyocr" if selected_engine in ("easyocr", "auto") else f"easyocr ({selected_engine} routing)"
+                    success = True
+                else:
+                    text, confidence = "", 0.0
+                    success = False
             except Exception as exc:
                 logger.warning("EasyOCR sentence extraction failed (%s); trying custom engine.", exc)
                 engine_used = "custom (fallback)"
@@ -555,13 +687,17 @@ class OCRPipeline:
 
 
 _default_pipeline: Optional[OCRPipeline] = None
-
+import threading
+_pipeline_lock = threading.Lock()
 
 def get_pipeline(cfg: Config = default_config) -> OCRPipeline:
     """Return a singleton instance of OCRPipeline."""
     global _default_pipeline
-    if _default_pipeline is None:
-        _default_pipeline = OCRPipeline(cfg)
-        _default_pipeline.initialize()
+    if _default_pipeline is None or not _default_pipeline._initialized:
+        with _pipeline_lock:
+            if _default_pipeline is None:
+                _default_pipeline = OCRPipeline(cfg)
+            if not _default_pipeline._initialized:
+                _default_pipeline.initialize()
     return _default_pipeline
 

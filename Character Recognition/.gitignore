@@ -116,4 +116,3 @@ temp/
 
 # Upload storage
 backend/uploads/
-*.pth
