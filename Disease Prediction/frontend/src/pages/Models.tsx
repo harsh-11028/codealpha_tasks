@@ -14,7 +14,14 @@ export default function Models() {
   useEffect(() => {
     setLoading(true);
     modelsApi.getPerformance(activeTab)
-      .then(res => setMetrics(res.data))
+      .then(res => {
+        const data = res.data;
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          setMetrics(Object.values(data));
+        } else {
+          setMetrics(Array.isArray(data) ? data : []);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [activeTab]);

@@ -24,7 +24,7 @@ export default function History() {
     setLoading(true);
     try {
       const res = await historyApi.getHistory({ disease: filterDisease });
-      setHistory(res.data);
+      setHistory(res.data?.predictions || []);
     } catch (err) {
       console.error(err);
     } finally {
